@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "thesis-generator"
+version = "0.1.0"
+description = "Open-source CLI orchestrator that writes, verifies, and audits a complete bachelor's thesis from your sources, your data, and your NotebookLM library."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "Eryk Czekalski" }]
+keywords = ["thesis", "academic", "writing", "ai", "claude", "notebooklm", "verification", "rag"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+    "typer>=0.12.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-docx>=1.1.0",
+    "pdfplumber>=0.11.0",
+    "openpyxl>=3.1.0",
+    "anthropic>=0.39.0",
+    "jinja2>=3.1.0",
+    "rich>=13.7.0",
+    "pyyaml>=6.0",
+    "tenacity>=8.2.0",
+    "matplotlib>=3.8.0",
+    "lxml>=5.0.0",
+]
+
+[project.optional-dependencies]
+windows = ["pywin32>=306"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5.0", "mypy>=1.10"]
+
+[project.scripts]
+thesis-generator = "thesis_generator.cli:app"
+tg = "thesis_generator.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/ekontoTURBO/thesis-generator"
+Issues = "https://github.com/ekontoTURBO/thesis-generator/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["thesis_generator"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

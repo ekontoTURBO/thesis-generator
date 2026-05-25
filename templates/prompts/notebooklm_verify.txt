@@ -1,0 +1,12 @@
+Weryfikacja jednego cytowania z pracy licencjackiej.
+Podaj VERDICT: OK / NIEŚCISŁE / BŁĘDNE + dosłowny cytat ze źródła.
+Jeśli VERDICT nie jest OK, zaproponuj jednozdaniową korektę po linii KOREKTA:.
+
+ŹRÓDŁO: {source_ref}
+PARAFRAZA W PRACY: "{paraphrase}"
+CYTOWANA STRONA: {cited_page}
+
+Format odpowiedzi:
+VERDICT: ...
+EXCERPT: "..."
+KOREKTA: ... (tylko jeśli VERDICT ≠ OK)

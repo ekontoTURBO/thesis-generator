@@ -1,0 +1,39 @@
+# {{ icon }} {{ phase }} — {{ status }}
+
+_Updated: {{ timestamp }}_
+
+## Stan finalny
+
+| Element | Wartość |
+|---|---|
+{% for k, v in file_metrics.items() -%}
+| {{ k }} | {{ v }} |
+{% endfor %}
+
+## Co zostało zrobione
+
+{% for c in completed -%}
+{{ loop.index }}. {{ c }}
+{% endfor %}
+
+## Najważniejsze ustalenia
+
+{% for f in findings -%}
+- {{ f }}
+{% endfor %}
+
+## Następne kroki
+
+{% for s in next_steps -%}
+{{ loop.index }}. {{ s }}
+{% endfor %}
+
+## Blockers / decyzje do podjęcia
+
+{% if blockers -%}
+{% for b in blockers -%}
+- {{ b }}
+{% endfor %}
+{% else -%}
+- brak
+{% endif %}

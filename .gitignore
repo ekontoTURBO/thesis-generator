@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project state (runtime artifacts — never commit)
+_reports/
+_state/
+_cache/
+_tmp/
+_audits/
+output/
+*_charts/
+
+# Test-generated artifacts inside _e2e_test (keep the scripts + base draft, ignore the mutations)
+_e2e_test/_reports/
+_e2e_test/_state/
+_e2e_test/output/
+_e2e_test/inputs/draft_humanize_test.docx
+_e2e_test/inputs/draft_humanized.docx
+_e2e_test/inputs/draft_visuals_test.docx
+_e2e_test/inputs/research_data/surveys/sample.xlsx
+_e2e_test/inputs/visuals/sample_image.png
+
+# User-specific project data (NEVER commit thesis content)
+projects/
+examples/sample_project/inputs/*.docx
+examples/sample_project/inputs/*.pdf
+examples/sample_project/inputs/*.xlsx
+examples/sample_project/inputs/*.xls
+
+# Secrets
+.env
+.env.local
+*.key
+api_keys.yaml
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Word lock files (the file-locked gotcha)
+~$*.docx
+~$*.doc

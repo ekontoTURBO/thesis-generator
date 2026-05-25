@@ -1,0 +1,48 @@
+# Example thesis.yaml — replace inputs with your real files.
+
+title: "Word-of-Mouth marketing w VR commerce — przykład"
+author: "Jane Student"
+school: "Uniwersytet Przykładowy"
+promotor: "prof. dr hab. Imię Nazwisko"
+language: pl
+citation_style: apa7
+
+inputs:
+  draft: inputs/draft.docx
+  sources_dir: inputs/sources
+  research_data_dir: inputs/research_data       # auto-discovers surveys/, interviews/, observations/, existing/
+  school_dir: inputs/school                     # auto-discovers regulation.docx, brief.pdf
+  # raw_data: [inputs/some_other.xlsx]          # uncomment to add files outside research_data/
+
+notebooklm:
+  library_url: "https://notebooklm.google.com/notebook/REPLACE-WITH-YOUR-UUID"
+  library_name: "Sample VR WoM library"
+  max_words_per_query: 400
+  parallel_queries: 3
+  timeout_seconds: 300
+
+models:
+  writer: claude-opus-4-7
+  auditor: claude-opus-4-7
+  reviewer: claude-opus-4-7
+  rewriter: claude-sonnet-4-6
+  verifier_per_source: claude-haiku-4-5-20251001
+
+humanization:
+  remove_em_dashes: true
+  forbidden_words:
+    - triangulacja
+    - rygorystycznie
+    - holistycznie
+    - synergiczny
+    - paradygmat
+
+output:
+  dir: output
+  docx_name: "Praca_demo.docx"
+  pdf: false                # set true once Word/LibreOffice is configured
+
+pipeline:
+  verification_rings: ["A"]   # only Ring A in demo — B and C need real sources + NotebookLM
+  max_parallel_haiku: 4
+  fail_on_grade_below: 3.5

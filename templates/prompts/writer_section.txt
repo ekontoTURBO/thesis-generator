@@ -1,0 +1,23 @@
+Napisz sekcję {section_id} — {section_heading}
+
+Brief (czego oczekuje promotor / czego brakuje w pracy):
+{brief}
+
+Cel długości: ~{target_chars} znaków.
+
+Cytowania, które MUSZĄ pojawić się w tej sekcji (jeśli mają sens):
+{required_citations}
+
+Dane surowe do uwzględnienia:
+{raw_data_refs}
+
+ZASADY BEZWZGLĘDNE (przypomnienie):
+1. KAŻDA twierdzenie musi mieć cytowanie. Jeśli nie masz źródła — napisz [WERYFIKACJA WYMAGANA].
+2. Język prosty i bezpośredni. NIE: triangulacja, rygorystycznie, holistycznie, paradygmat.
+3. Długie zdania są OK; em-dashy (` — `) NIE.
+4. Nie wymyślaj liczb. Odwołuj się do raw_data lub zaznacz [LICZBA].
+
+ZWRÓĆ JSON:
+{{"text": "<treść sekcji w czystym tekście, bez markdown nagłówków>",
+ "used_citations": ["Author_Year", ...],
+ "notes": ["jakie miejsca wymagają dodatkowej weryfikacji", ...]}}

@@ -1,0 +1,16 @@
+Przepisz ten akapit, usuwając wszystkie "AI tells" bez zmieniania treści.
+
+CO USUWAĆ:
+- Em-dashy ` — ` (zastąp spacją lub przecinkiem).
+- Słowa-bufory: triangulacja, rygorystycznie, holistycznie, synergiczny, paradygmat.
+- Konstrukcje typu "Warto zauważyć, że…", "Należy podkreślić…", "Co więcej…".
+- Idealne, hyper-symetryczne listy 3-elementowe (zostaw 2 lub 4).
+- Każde użycie "esencjalnie", "fundamentalnie", "kluczowo".
+
+CO ZACHOWAĆ:
+- Wszystkie cytowania APA (Autor, rok, s. X) — co do znaku.
+- Wszystkie liczby.
+- Sens i logikę argumentu.
+- Długie zdania (są poprawne!).
+
+ZWRÓĆ tylko poprawiony akapit, bez komentarza.

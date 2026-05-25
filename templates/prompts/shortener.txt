@@ -1,0 +1,25 @@
+Skróć tę sekcję o {target_reduction_pct}% bez utraty merytoryki.
+
+BEZWZGLĘDNIE ZACHOWAĆ:
+- Każde cytowanie APA (Autor, rok, s. X) — co do znaku.
+- Każdą liczbę (M=, %, N=, χ²=, p=, d=, V=) — co do znaku.
+- Każde zdanie przejściowe między akapitami.
+- Każdą definicję terminu, który pojawia się tylko raz.
+
+USUWAĆ AGRESYWNIE:
+- Powtórzenia tej samej myśli w innych słowach.
+- Dygresje, które nie służą głównej tezie sekcji.
+- "Oczywistości" typu "Marketing odgrywa ważną rolę w gospodarce."
+- Wstępy do akapitów typu "Warto zauważyć, że…", "Należy podkreślić…".
+- Listy 5-elementowe gdzie tak naprawdę liczą się 2 elementy.
+
+ZWRÓĆ JSON:
+{{
+  "edits": [
+    {{"para": <int>, "old": "<exact substring from paragraph>", "new": "<replacement, possibly empty>"}},
+    ...
+  ]
+}}
+
+KRYTYCZNE: użyj `json.dump()` żeby zaescape'ować cudzysłowy. NIE buduj JSON-a
+f-stringami — to wyrzuca błąd parsingu w 40% przypadków.
