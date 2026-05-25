@@ -501,6 +501,142 @@ def version_cmd() -> None:
     console.print(f"thesis-generator {__version__}")
 
 
+@app.command("install-skill")
+def install_skill_cmd(
+    force: bool = typer.Option(False, "--force", help="Overwrite existing installation"),
+) -> None:
+    """Install the thesis-generator skill into ~/.claude/skills/ for use as a slash command in Claude Code."""
+    import shutil
+    import sys as _sys
+
+    skill_src = Path(__file__).resolve().parent.parent / "skill"
+    if not skill_src.exists():
+        console.print(f"[red]Skill source not found at {skill_src}[/red]")
+        raise typer.Exit(1)
+
+    dest = Path.home() / ".claude" / "skills" / "thesis-generator"
+    if dest.exists():
+        if not force:
+            console.print(f"[yellow]Already installed at {dest}[/yellow]")
+            console.print("Use [green]tg install-skill --force[/green] to overwrite.")
+            raise typer.Exit(1)
+        shutil.rmtree(dest)
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    # On Windows, copy. On POSIX, try symlink (so skill updates as repo updates), fall back to copy.
+    if _sys.platform.startswith("win"):
+        shutil.copytree(skill_src, dest)
+        console.print(f"[green]✓[/green] Copied skill to [cyan]{dest}[/cyan]")
+    else:
+        try:
+            dest.symlink_to(skill_src)
+            console.print(f"[green]✓[/green] Symlinked [cyan]{skill_src}[/cyan] → [cyan]{dest}[/cyan]")
+            console.print("[dim]Updates to your local repo will be reflected immediately.[/dim]")
+        except OSError:
+            shutil.copytree(skill_src, dest)
+            console.print(f"[green]✓[/green] Copied skill to [cyan]{dest}[/cyan]")
+
+    console.print()
+    console.print("[bold]Next steps:[/bold]")
+    console.print("  1. Restart Claude Code (or run [green]/reload-skills[/green])")
+    console.print("  2. Fire with [green]/thesis-generator[/green] from any project directory")
+    console.print("  3. The skill orchestrates everything natively — Agent tool, no subprocess")
+
+
+@app.command("extract-claims")
+def extract_claims_cmd(
+    project_dir: Path,
+    output_json: Path = typer.Option(None, "--output", "-o", help="Where to write JSON-Lines (default: <project>/_state/extracted_claims.json)"),
+) -> None:
+    """Extract numeric claims from the draft as JSON-Lines (for the skill orchestrator)."""
+    import json as _json
+    from thesis_generator.numbers_audit.extractor import extract_numeric_claims
+
+    project = ThesisProject.load(project_dir)
+    draft = project.resolve_input(project.inputs.draft)
+    claims = extract_numeric_claims(draft)
+    out = output_json or (project.state_dir() / "extracted_claims.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as f:
+        for c in claims:
+            f.write(_json.dumps({
+                "paragraph_idx": c.paragraph_idx,
+                "paragraph_tag": f"P{c.paragraph_idx:04d}",
+                "sentence": c.sentence,
+                "numbers_found": c.numbers_found,
+            }, ensure_ascii=False) + "\n")
+    console.print(f"[green]✓[/green] {len(claims)} claims → {out}")
+
+
+@app.command("extract-hypotheses")
+def extract_hypotheses_cmd(
+    project_dir: Path,
+    output_json: Path = typer.Option(None, "--output", "-o"),
+) -> None:
+    """Extract H1/H2/H3 declarations + verdicts from the draft as JSON."""
+    import json as _json
+    from thesis_generator.numbers_audit.extractor import extract_hypotheses
+
+    project = ThesisProject.load(project_dir)
+    draft = project.resolve_input(project.inputs.draft)
+    hyps = extract_hypotheses(draft)
+    out = output_json or (project.state_dir() / "extracted_hypotheses.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        _json.dumps([
+            {"kind": h.kind, "hypothesis_id": h.hypothesis_id,
+             "paragraph_idx": h.paragraph_idx, "sentence": h.sentence,
+             "verdict_keyword": h.verdict_keyword}
+            for h in hyps
+        ], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    console.print(f"[green]✓[/green] {len(hyps)} hypothesis statements → {out}")
+
+
+@app.command("render-audit-report")
+def render_audit_report_cmd(project_dir: Path) -> None:
+    """Stitch every per-phase audit report into a single consolidated `_reports/THESIS_AUDIT.md`."""
+    from thesis_generator.audit_only import _render_consolidated_report, AuditResult
+    import json as _json
+
+    project = ThesisProject.load(project_dir)
+    result = AuditResult()
+
+    # Load whatever phase reports exist on disk — graceful if any are missing
+    reports = project.reports_dir()
+    state = project.state_dir()
+
+    # Ring A
+    ring_a_path = reports / "ring_a_internal.md"
+    if ring_a_path.exists():
+        from thesis_generator.verify.internal import run_ring_a
+        try:
+            result.ring_a = run_ring_a(project)
+        except Exception:
+            pass
+
+    # Citation audit + fixes
+    fix_path = state / "citation_fixes.json"
+    if fix_path.exists():
+        try:
+            data = _json.loads(fix_path.read_text(encoding="utf-8"))
+            from thesis_generator.notebooklm.correction import CitationFix
+            from thesis_generator.citation_audit.orchestrator import OpusOrchestratorResult
+            result.fixes = OpusOrchestratorResult(
+                fixes=[CitationFix(**d) for d in data],
+                summary=(reports / "citation_audit_synthesis.md").read_text(encoding="utf-8")
+                if (reports / "citation_audit_synthesis.md").exists() else "",
+            )
+        except Exception:
+            pass
+
+    out = reports / "THESIS_AUDIT.md"
+    out.write_text(_render_consolidated_report(result, project), encoding="utf-8")
+    console.print(f"[green]✓[/green] Consolidated audit → {out}")
+
+
 def _starter_yaml(title: str, author: str) -> str:
     """Generate a starter thesis.yaml with comments pointing at every knob."""
     return f"""# thesis-generator project config

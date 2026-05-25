@@ -105,14 +105,35 @@ If you write in English, translate the prompt — the structure stays the same.
 
 ## Quick start
 
+You have two ways to run this. **The skill path is the recommended one** — it orchestrates everything in a single Claude Code session via the native `Agent` tool, just like the proven workflow that built it.
+
+### Recommended — install as Claude Code skill (native orchestration)
+
 ```bash
-# Install
 git clone https://github.com/ekontoTURBO/thesis-generator.git
 cd thesis-generator
 pip install -e .
+tg install-skill                # symlinks (or copies on Windows) skill/ → ~/.claude/skills/thesis-generator/
+```
 
-# First run? Just one command — interactive wizard walks you through every step.
-tg setup
+Then from any Claude Code session:
+
+```
+/thesis-generator audit /path/to/my-thesis           # verify an existing finished thesis
+/thesis-generator generate /path/to/my-new-thesis    # write from scratch
+/thesis-generator setup                              # interactive first-run wizard
+```
+
+The skill dispatches Haiku swarms via the native `Agent` tool (not subprocess), runs in your current terminal, uses your Claude Code subscription, and you see every step happen in real time.
+
+### Alternative — standalone Python CLI
+
+If you don't want to use Claude Code as the runtime, the Python CLI works standalone (it shells out to `claude -p` under the hood, so you still need Claude Code installed, but it runs end-to-end without a Claude Code session):
+
+```bash
+tg setup                        # interactive wizard — branches AUDIT vs GENERATE vs MIXED
+tg audit /path/to/my-thesis     # audit-only
+tg notebook-pipeline /path/to/my-thesis  # generate + audit + correct
 ```
 
 The wizard does:

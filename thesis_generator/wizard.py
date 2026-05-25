@@ -32,6 +32,19 @@ class WizardState:
     project_dir: Path
     is_existing_project: bool
     existing_config: dict | None = None
+    mode: str = "generate"  # "generate" | "audit" | "mixed"
+
+
+def _ask_mode(console: Console, *, non_interactive: bool) -> str:
+    if non_interactive:
+        return "generate"
+    console.print(
+        "[bold]a)[/bold] [cyan]audit[/cyan]    — I have a FINISHED thesis and want it verified (read-only)\n"
+        "[bold]b)[/bold] [cyan]generate[/cyan] — I want to WRITE a new thesis from sources\n"
+        "[bold]c)[/bold] [cyan]mixed[/cyan]    — I have a partial draft and want to write the rest + verify all of it"
+    )
+    choice = Prompt.ask("Mode", choices=["audit", "generate", "mixed"], default="generate")
+    return choice
 
 
 # Stable section header that walks the user through the steps.
@@ -71,18 +84,26 @@ def run_setup_wizard(
         )
         return 1
 
-    # -------- Step 2: pick project directory --------
-    _step_header(console, 2, "Project location")
+    # -------- Step 2: pick mode FIRST (audit vs generate) --------
+    _step_header(console, 2, "What are you doing?")
+    mode = _ask_mode(console, non_interactive=non_interactive)
+    console.print(f"[dim]Mode: [bold]{mode}[/bold][/dim]")
+
+    # -------- Step 2b: pick project directory --------
     state = _resolve_project_dir(console, project_dir, non_interactive=non_interactive)
     if state is None:
         return 1
+    state.mode = mode  # attach mode to state for downstream steps
 
-    # -------- Step 3: thesis basics (title/author/etc.) --------
-    _step_header(console, 3, "Thesis basics")
+    # -------- Step 3: thesis basics (only ask what we need for the mode) --------
+    _step_header(console, 3, "Thesis basics" if mode == "generate" else "Thesis info (minimal)")
     basics = _collect_basics(console, state, non_interactive=non_interactive)
 
     # -------- Step 4: NotebookLM library --------
-    _step_header(console, 4, "NotebookLM library")
+    _step_header(console, 4, "NotebookLM library" + (" (optional for audit)" if state.mode == "audit" else ""))
+    if state.mode == "audit":
+        console.print("[dim]NotebookLM is OPTIONAL for audit mode — only needed if you want Ring C source-grounded[/dim]")
+        console.print("[dim]cross-verification of every citation. Ring A (regex) + Haiku swarm + numbers recompute work without it.[/dim]\n")
     notebooklm = _resolve_notebooklm(console, state, non_interactive=non_interactive)
 
     # -------- Step 5: scaffold folder structure --------
@@ -108,7 +129,7 @@ def run_setup_wizard(
                 border_style="green",
             )
         )
-        _print_next_steps(console, state.project_dir)
+        _print_next_steps(console, state.project_dir, mode=state.mode)
         return 0
     else:
         console.print(
@@ -257,7 +278,27 @@ def _collect_basics(console: Console, state: WizardState, *, non_interactive: bo
     if non_interactive:
         return defaults
 
-    console.print("[dim]Press Enter to keep the default in brackets.[/dim]\n")
+    # AUDIT mode: minimal — title gets read from inside the docx later, author
+    # is irrelevant for verification reports. Only language + citation style
+    # matter (they affect regex matching + prompt routing).
+    if state.mode == "audit":
+        console.print("[dim]Auditing an existing thesis — only language + citation style matter.[/dim]")
+        console.print("[dim]Title and author are auto-detected from the docx when possible.[/dim]\n")
+        return {
+            "title": defaults["title"],  # will be overwritten from docx if detectable
+            "author": defaults["author"],
+            "school": defaults["school"],
+            "promotor": defaults["promotor"],
+            "language": Prompt.ask("Thesis language", choices=["pl", "en"], default=defaults["language"]),
+            "citation_style": Prompt.ask(
+                "Citation style used in the thesis",
+                choices=["apa7", "vancouver", "chicago"],
+                default=defaults["citation_style"],
+            ),
+        }
+
+    # GENERATE / MIXED mode: collect everything for the writer's system prompt
+    console.print("[dim]These fields go into the writer's prompts. Press Enter to keep the default.[/dim]\n")
     return {
         "title": Prompt.ask("Thesis title", default=defaults["title"]),
         "author": Prompt.ask("Author", default=defaults["author"]),
@@ -508,11 +549,31 @@ def _run_final_check(console: Console, project_dir: Path) -> bool:
         return False
 
 
-def _print_next_steps(console: Console, project_dir: Path) -> None:
+def _print_next_steps(console: Console, project_dir: Path, mode: str = "generate") -> None:
     console.print("\n[bold]Next steps:[/bold]")
-    console.print(f"  1. Replace [cyan]{project_dir / 'inputs' / 'draft.docx'}[/cyan] with your real draft")
-    console.print(f"  2. Drop your source PDFs into [cyan]{project_dir / 'inputs' / 'sources'}/[/cyan]")
-    console.print(f"  3. Drop research data into [cyan]{project_dir / 'inputs' / 'research_data'}/[/cyan] (surveys/, interviews/, etc.)")
-    console.print(f"  4. (Re-)run [green]tg verify-env {project_dir}[/green] when you've added the real files")
-    console.print(f"  5. [green]tg verify {project_dir} --rings A[/green]  — fast internal audit")
-    console.print(f"  6. [green]tg run {project_dir}[/green]               — full pipeline\n")
+    if mode == "audit":
+        # Pure audit path — user already has the thesis; goal is verification.
+        console.print(f"  1. Drop [cyan]your finished thesis.docx[/cyan] into [cyan]{project_dir / 'inputs' / 'draft.docx'}[/cyan]")
+        console.print(f"  2. Drop source PDFs into [cyan]{project_dir / 'inputs' / 'sources'}/[/cyan] (recursive — subfolders OK)")
+        console.print(f"  3. Drop raw research data (xlsx/csv) into [cyan]{project_dir / 'inputs' / 'research_data' / 'surveys'}/[/cyan] (optional, enables numbers recompute)")
+        console.print(f"  4. [green]tg verify-env {project_dir}[/green]")
+        console.print(f"  5. [green]tg audit {project_dir} --shallow[/green]   — fast (regex/data only, no LLM)")
+        console.print(f"  6. [green]tg audit {project_dir}[/green]             — full deep audit (Haiku swarm + Opus reviewer + numbers recompute)")
+        console.print(f"  7. Open [cyan]{project_dir / '_reports' / 'THESIS_AUDIT.md'}[/cyan] — consolidated report\n")
+        console.print("[dim]Or, for native one-session orchestration with subagents:[/dim]")
+        console.print(f"  [green]tg install-skill[/green]  then in Claude Code: [green]/thesis-generator audit {project_dir}[/green]")
+    elif mode == "mixed":
+        console.print(f"  1. Drop your [cyan]partial draft.docx[/cyan] into [cyan]{project_dir / 'inputs' / 'draft.docx'}[/cyan]")
+        console.print(f"  2. Drop sources + research data into the appropriate folders")
+        console.print(f"  3. [green]tg verify-env {project_dir}[/green]")
+        console.print(f"  4. [green]tg audit {project_dir}[/green]              — see what's already there and what's broken")
+        console.print(f"  5. [green]tg notebook-write {project_dir} --section <id> --title \"...\" --focus \"...\"[/green] — fill in missing sections one by one")
+        console.print(f"  6. [green]tg notebook-pipeline {project_dir}[/green]   — full write+audit+correct loop\n")
+    else:  # generate
+        console.print(f"  1. Replace [cyan]{project_dir / 'inputs' / 'draft.docx'}[/cyan] with your starter draft (introduction, methodology, anything you've written)")
+        console.print(f"  2. Drop source PDFs into [cyan]{project_dir / 'inputs' / 'sources'}/[/cyan]")
+        console.print(f"  3. Drop research data into [cyan]{project_dir / 'inputs' / 'research_data'}/[/cyan]")
+        console.print(f"  4. Set the NotebookLM [bold]System Instructions[/bold] (see step 4 in this wizard)")
+        console.print(f"  5. [green]tg notebook-pipeline {project_dir}[/green]   — write + audit + correct\n")
+        console.print("[dim]Or use the native Claude Code skill (subagents in one session):[/dim]")
+        console.print(f"  [green]tg install-skill[/green]  then [green]/thesis-generator generate {project_dir}[/green]")
